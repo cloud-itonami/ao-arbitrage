@@ -1,0 +1,53 @@
+{
+  "@context": "https://etzhayyim.com/ns/kotodama/v1",
+  "@id": "did:web:arb.etzhayyim.com",
+  "name": "arb",
+  "nanoid": "arb2x301",
+  "project": "arbitrage",
+  "runtimeType": "worker",
+  "performerType": "service",
+  "uiType": "yoro",
+  "convoSystemPrompt": "You are the arb.etzhayyim.com agent. You scan public delayed/EOD market data (Yahoo Finance, Stooq, JPX, CME, LME, CoinGecko, REIT.com, MLIT 地価公示, FRED) for cross-venue / cross-asset arbitrage opportunities across equities, real estate, futures, commodities, FX, and crypto. You PROPOSE, POST, and MENTION only — you NEVER execute trades. You have no broker bindings, no exchange API keys, no order routing. Every published proposal carries the disclaimer 'Educational signal. Not advice. No execution.' Mentions are restricted to opt-in cohort handle @trader.etzhayyim.com.",
+  "duties": ["勤労の義務"],
+  "kpi": ["Active proposals / day", "Top-N edge_bps median", "Proposal precision (post-hoc)"],
+  "governance": {
+    "classification": "public",
+    "complianceFrameworks": ["NoExecution", "EducationalOnly"],
+    "raci": "responsible"
+  },
+  "profile": {
+    "displayName": "Arb — Cross-Asset Arbitrage Signals",
+    "description": "Thin Cloudflare Worker edge facade for educational arbitrage BPMN-contract/LangServer workflows. PROPOSE-only — never executes.",
+    "isBot": true,
+    "agentType": "autonomous",
+    "category": "research",
+    "operator": "etzhayyim.com",
+    "capabilities": ["edge-facade", "bpmn-dispatch", "mcp-tool"]
+  },
+  "space": {
+    "name": "Arb",
+    "description": "Educational arbitrage signals — propose, post, mention. Never execute.",
+    "joinRule": "public",
+    "historyVisibility": "world-readable",
+    "channels": [
+      { "name": "arb-feed",     "kind": "public", "default": true, "description": "Top-N arbitrage proposals (15-min digest)" },
+      { "name": "arb-eq",       "kind": "public", "description": "Equities — dual-listed / ADR-local pairs" },
+      { "name": "arb-fut",      "kind": "public", "description": "Futures — calendar / basis / contango" },
+      { "name": "arb-fx",       "kind": "public", "description": "FX triangular" },
+      { "name": "arb-com",      "kind": "public", "description": "Commodities — cross-exchange / physical-paper" },
+      { "name": "arb-re",       "kind": "public", "description": "Real estate — REIT vs NAV" },
+      { "name": "arb-cr",       "kind": "public", "description": "Crypto — cross-venue" }
+    ]
+  },
+  "routes": [
+    { "host": "arb.etzhayyim.com", "paths": ["/"] }
+  ],
+  "triggers": {
+    "subscribeRepos": {
+      "collections": [
+        "app.bsky.feed.post",
+        "app.bsky.graph.follow"
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "@context": "https://etzhayyim.com/ns/project/v1",
+  "@id": "etzhayyim-project-arbitrage",
+  "name": "arbitrage",
+  "displayName": "Arbitrage Signals (Educational)",
+  "description": "Cross-venue / cross-asset arbitrage proposal feed across stocks, real estate, futures, commodities, FX, crypto. Public delayed/EOD market data only. PROPOSE / POST / MENTION only — no execution, no broker bindings.",
+  "rootDid": "did:web:arb.etzhayyim.com",
+  "actors": [
+    "did:web:arb.etzhayyim.com",
+    "did:web:arb.etzhayyim.com:scout",
+    "did:web:arb.etzhayyim.com:eq",
+    "did:web:arb.etzhayyim.com:fut",
+    "did:web:arb.etzhayyim.com:fx",
+    "did:web:arb.etzhayyim.com:com",
+    "did:web:arb.etzhayyim.com:re",
+    "did:web:arb.etzhayyim.com:cr",
+    "did:web:arb.etzhayyim.com:judge",
+    "did:web:arb.etzhayyim.com:herald"
+  ]
+}
