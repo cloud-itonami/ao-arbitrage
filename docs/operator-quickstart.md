@@ -1,17 +1,36 @@
 # Operator quickstart — `cloud-itonami/arbitrage`
 
-Every command below was run end to end on **2026-08-12** against commit
-`412fa8a` on `main`, and the output shown is the output that came back. Where a
-step failed, the failure is recorded rather than fixed — see §7 for the list of
-things this document does **not** claim to have done.
+> **2026-08-26 update:** the frontend was migrated from SvelteKit to
+> ClojureScript (reagent + re-frame + `jp-go-dds`) — see
+> [`../README.md`](../README.md#where-the-code-actually-runs). §1–§2 below
+> have been refreshed for the new tracked-file set and are current. §3 has
+> been replaced with the cljs build/test record. **§4–§8 are unchanged from
+> 2026-08-12 and describe the SvelteKit build this repo no longer has** —
+> they are kept for history (the failures they recorded, e.g. the DNS/500
+> chain in §5–§6, are still true facts about the upstream network, just not
+> about a route this Worker serves anymore) but every command in them that
+> touches `worker/svelte/` will fail with "no such file or directory" if you
+> try to run it today. `wrangler deploy`/`wrangler dev` were not run against
+> the new build either — that remains unverified ground, same as before.
+
+Every command in §1–§3 below was run end to end on **2026-08-26** against the
+migration branch. Commands in §4–§8 were run on **2026-08-12** against commit
+`412fa8a` on `main`, before the migration; the output shown there is what came
+back then. Where a step failed, the failure is recorded rather than fixed —
+see §7 for the (pre-migration) list of things this document did **not** claim
+to have done.
 
 Read [`../README.md`](../README.md) first if you have not: this repo has two
-worker entry points and only one of them ships, which makes §4 the step people
-skip and then get confused by.
+non-deploying worker facades (`worker/src/app.ts`, `worker/src/xrpc-proxy.ts`) and
+one deploying static-asset build (`worker/cljs/`), which makes
+[Where the code actually runs](../README.md#where-the-code-actually-runs) the
+section people skip and then get confused by.
 
 - §1 and §2 need **nothing installed** — not even Node.
-- §3–§6 need **Node + npm** and about 270 MB of disk.
-- §7 is the honest list of untested ground.
+- §3 needs **Node + npm** (Clojure CLI + the JVM for `public/index.html`
+  regeneration, if you need to redo that step).
+- §4–§8 (pre-migration, historical) needed Node + npm and about 270 MB of
+  disk, for a build that no longer exists in this tree.
 
 Timings are from an M-series Mac with a warm npm cache. Treat them as an order
 of magnitude, not a benchmark.
@@ -20,43 +39,52 @@ of magnitude, not a benchmark.
 
 ## §1 Read the repo without installing anything
 
-There are 13 tracked files. You can hold the whole thing in your head.
+There are 17 tracked files (was 13, pre-migration). You can still hold the
+whole thing in your head.
 
 ```bash
 git ls-files
 ```
 
 ```
+.gitignore
+docs/operator-quickstart.md
+migration.edn
 PROJECT.jsonld
 README.edn
-migration.edn
+README.md
+worker/cljs/.gitignore
+worker/cljs/deps.edn
+worker/cljs/package.json
+worker/cljs/public/index.html
+worker/cljs/shadow-cljs.edn
+worker/cljs/src/arbitrage_worker/app.cljs
+worker/cljs/test/arbitrage_worker/app_test.cljs
 worker/kotodama.jsonld
 worker/src/app.ts
-worker/svelte/package.json
-worker/svelte/src/app.html
-worker/svelte/src/routes/+page.svelte
-worker/svelte/src/routes/xrpc/[...path]/+server.ts
-worker/svelte/svelte.config.js
-worker/svelte/tsconfig.json
-worker/svelte/vite.config.ts
 worker/wrangler.jsonc
+worker/src/xrpc-proxy.ts
 ```
 
-The four files that carry all the meaning:
+The files that carry all the meaning:
 
 | file | what it decides |
 |---|---|
 | `worker/kotodama.jsonld` | the agent's identity, its KPIs, and the **NoExecution / EducationalOnly** boundary |
-| `worker/wrangler.jsonc` | which hosts it answers on, and **which file actually deploys** |
-| `worker/svelte/src/routes/xrpc/[...path]/+server.ts` | the only outbound call in the repo |
+| `worker/wrangler.jsonc` | which hosts it answers on, and that it now serves `worker/cljs/public` as static assets (no `main`) |
+| `worker/cljs/src/arbitrage_worker/app.cljs` | the status page, ported from the old SvelteKit route |
+| `worker/src/xrpc-proxy.ts` | the only outbound call this repo has ever had — **preserved, not wired** as of 2026-08-26 |
 | `PROJECT.jsonld` | the 10 actor DIDs this project claims |
 
 ## §2 Check the extraction record — no dependencies
 
-`migration.edn` records what was carried out of `etzhayyim/root`:
-`:tracked-files 11 :bytes 15234`. The two metadata files added during
-extraction (`README.edn`, `migration.edn`) are not part of that count, so the
-claim is still checkable today:
+`migration.edn` records what was carried out of `etzhayyim/root` **at
+extraction time (commit `412fa8a`)**: `:tracked-files 11 :bytes 15234`. That
+was still exactly checkable through 2026-08-12; the 2026-08-26
+Svelte→ClojureScript migration intentionally changed the tracked set (see
+§1), so re-running the same command today gives different, larger numbers —
+that is expected drift from real, in-scope work, not silent editing of
+extracted content. Recomputed today:
 
 ```bash
 git ls-files PROJECT.jsonld worker | wc -l
@@ -64,13 +92,23 @@ git ls-files PROJECT.jsonld worker | xargs wc -c | tail -1
 ```
 
 ```
-      11
-   15234 total
+      12
+   96594 total
 ```
 
-Both match `migration.edn` exactly. If either number moves, someone has edited
-extracted content without updating the record — that is the only thing this
-check is for.
+(`worker/cljs/public/index.html` alone is ~74 KB — DADS CSS is inlined into
+it rather than linked, per `jp-go-dds.page`'s no-external-requests default —
+which accounts for nearly all of the byte-count growth.)
+
+**Neither number matches `migration.edn` anymore, and that's expected as of
+this commit** — see the note above §1. Through 2026-08-12 both numbers matched
+`migration.edn` exactly, and *that* invariant ("if either number moves without
+a recorded reason, someone edited extracted content silently") is what this
+check was for; the 2026-08-26 migration is the recorded reason. If you need to
+re-verify going forward, re-run this same command and diff the byte count
+against the `96594` recorded here (not against `migration.edn`'s `15234`) —
+this document's own recorded output is now the reference point until the next
+recorded change.
 
 > The paths are **selected**, not filtered. An earlier draft of this file
 > excluded the two metadata files with `grep -v` instead, which was correct
@@ -78,7 +116,84 @@ check is for.
 > Naming the extracted paths keeps the check valid no matter what
 > repo-level files get added later.
 
-## §3 Build the worker that actually deploys
+## §3 Build the worker that actually deploys (2026-08-26, ClojureScript)
+
+```bash
+cd worker/cljs
+npm install
+```
+
+```
+added 129 packages, and audited 130 packages in 19s
+
+27 packages are looking for funding
+  run `npm fund` for details
+
+6 low severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+```
+
+Build, through the shared fleet resource guard (foreground, retried on
+`exit 2` = lock held by another agent's build — this happened five times in
+a row here before the lock cleared):
+
+```bash
+node /Users/junkawasaki/github/com-junkawasaki/scripts/resource-guard.mjs run build -- npx shadow-cljs compile app
+```
+
+```
+shadow-cljs - config: .../worker/cljs/shadow-cljs.edn
+shadow-cljs - starting via "clojure"
+[:app] Compiling ...
+[:app] Build completed. (111 files, 110 compiled, 0 warnings, 32.40s)
+```
+
+(SLF4J/Guava/`sun.misc.Unsafe` deprecation warnings from the JVM toolchain
+omitted above — cosmetic, not build failures.)
+
+Test build, same guard:
+
+```bash
+node /Users/junkawasaki/github/com-junkawasaki/scripts/resource-guard.mjs run build -- npx shadow-cljs compile test
+```
+
+```
+[:test] Compiling ...
+[:test] Build completed. (112 files, 111 compiled, 0 warnings, 22.43s)
+```
+
+Run the compiled tests with plain Node (no guard needed — this is fast and
+local, not a shared-fleet build):
+
+```bash
+node out/tests.js
+```
+
+```
+Testing arbitrage-worker.app-test
+re-frame: Subscribe was called outside of a reactive context.
+ https://day8.github.io/re-frame/FAQs/UseASubscriptionInAnEventHandler/
+[... 17 more identical re-frame warning lines, one per direct rf/subscribe
+     call made outside a Reagent render — expected and harmless for tests
+     that read subs directly rather than through a mounted component ...]
+
+Ran 6 tests containing 18 assertions.
+0 failures, 0 errors.
+```
+
+Both builds pass genuinely (0 warnings, 0 failures, 0 errors) and this is
+what was actually landed. `wrangler deploy` / `wrangler dev` were **not**
+run — see [Where the code actually runs](../README.md#where-the-code-actually-runs)
+in the README for why that remains unverified.
+
+### §3-pre (historical, 2026-08-12, SvelteKit — this build no longer exists)
+
+Kept verbatim for history. Every command below fails today with "no such
+file or directory": `worker/svelte/` was deleted in the 2026-08-26 migration.
 
 ```bash
 cd worker/svelte
@@ -127,7 +242,7 @@ COMPLETED 142 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS
 Clean. Note what that number covers: 142 files rooted at `worker/svelte/`.
 It does **not** cover `worker/src/app.ts`, which is the subject of §4.
 
-## §4 Confirm which entry point ships
+## §4 Confirm which entry point ships (historical, pre-migration — see §3 for what's current)
 
 `worker/wrangler.jsonc` sets `main` to the adapter output, so the build in §3 is
 what Cloudflare would run:
@@ -188,7 +303,7 @@ The deployable unit is therefore the whole `.svelte-kit/` tree (768 KB), not the
 140 KB `cloudflare/` directory. Copying `cloudflare/` somewhere on its own
 produces a worker that cannot start.
 
-## §5 Run it locally and probe every route
+## §5 Run it locally and probe every route (historical, pre-migration)
 
 ```bash
 cd svelte
@@ -242,7 +357,7 @@ While you are here: `/` reports `Routes 0` and "No public route is declared",
 but `wrangler.jsonc` declares two. The page is unedited scaffold output with
 `routeCount: 0` hardcoded in `+page.svelte`; it is not reading the config.
 
-## §6 The network reality
+## §6 The network reality (still true — the upstream network has not changed)
 
 ```bash
 for h in etzhayyim.com arb.etzhayyim.com arb2x301.etzhayyim.com \
@@ -268,7 +383,7 @@ That ordering matters for anyone planning to ship this: standing up
 `arb.etzhayyim.com` gets you a status page and a 500. The MCP router has to
 exist first.
 
-## §7 What this document has not done
+## §7 What this document has not done (as of the 2026-08-12 pre-migration build; §3 states what 2026-08-26 did and did not verify)
 
 Recorded so nobody reads the sections above as broader than they are.
 
@@ -290,12 +405,17 @@ Recorded so nobody reads the sections above as broader than they are.
   `kotodama.ingest.arbitrage` module that compute proposals were not extracted
   into this repo and were not run.
 - **The NoExecution boundary was read, not tested.** It holds by absence of a
-  broker client, not by an assertion. There is no test suite in this repo at
-  all.
+  broker client, not by an assertion. There was no test suite in this repo at
+  all as of 2026-08-12. **This has partially changed**: as of 2026-08-26,
+  `worker/cljs/test/arbitrage_worker/app_test.cljs` covers the status page's
+  rendering logic (`cljs.test`, 6 tests / 18 assertions, see §3) — but it does
+  not touch the NoExecution boundary, which still holds by absence, not by
+  assertion.
 
 ## §8 Disk and cleanup
 
-The build leaves three untracked, regenerable directories:
+Pre-migration (SvelteKit), the build left three untracked, regenerable
+directories, all now moot since `worker/svelte/` is gone:
 
 | path | size |
 |---|---|
@@ -303,9 +423,21 @@ The build leaves three untracked, regenerable directories:
 | `worker/svelte/.svelte-kit/` | 768 KB |
 | `worker/svelte/.wrangler/` | small |
 
-All three are in `.gitignore`. To reclaim the space:
+Post-migration (ClojureScript), `worker/cljs/` leaves its own untracked,
+regenerable directories (measured 2026-08-26, after the §3 build):
+
+| path | size |
+|---|---|
+| `worker/cljs/node_modules/` | 31 MB |
+| `worker/cljs/.shadow-cljs/` | 51 MB |
+| `worker/cljs/public/js/` | 12 MB (the built app bundle — regenerate with `npm run build`) |
+| `worker/cljs/out/` | 52 KB (`node_modules/`, `.shadow-cljs/`, `public/js/`, `out/`, `.cpcache/` — all in `.gitignore`) |
+
+To reclaim the space:
 
 ```bash
+rm -rf worker/cljs/node_modules worker/cljs/.shadow-cljs worker/cljs/public/js worker/cljs/out worker/cljs/.cpcache
+# pre-migration paths below no longer exist; kept for history
 rm -rf worker/svelte/node_modules worker/svelte/.svelte-kit worker/svelte/.wrangler
 ```
 

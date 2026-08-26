@@ -1,3 +1,37 @@
+// PRESERVED, NOT WIRED. Moved verbatim (bytes unchanged below the `---`
+// marker) from worker/svelte/src/routes/xrpc/[...path]/+server.ts during the
+// Svelte -> ClojureScript frontend migration (see docs/operator-quickstart.md
+// and README.md "Where the code actually runs").
+//
+// This was a SvelteKit *server route* — the only outbound network call in
+// this repo, proxying POST /xrpc/<nsid> to the MCP router at
+// AGENTGATEWAY_MCP_ROUTER_URL / MCP_ROUTER_URL (default
+// https://mcp.etzhayyim.com/xrpc/com.etzhayyim.mcp.message). It is real
+// backend/edge logic, not frontend markup, so it is out of scope for a
+// Svelte-frontend-to-cljs migration (worker/cljs is a shadow-cljs :browser
+// build with no server-side target) and out of scope for "leave the Worker
+// backend under worker/ alone" (that instruction was about
+// worker/src/app.ts, a *different*, already-unwired facade with a different
+// upstream — dispatcher.etzhayyim.com, not mcp.etzhayyim.com — and a
+// different NSID convention; see README.md's "two worker entry points"
+// section). Deleting this file's logic outright, rather than preserving it,
+// would have silently thrown away the one piece of real integration code in
+// the repo.
+//
+// It still imports SvelteKit types (`@sveltejs/kit`, `./$types`) and will not
+// compile as-is now that worker/svelte/ is gone. It requires its own
+// tsconfig.json and a decision about how (or whether) to wire it into a real
+// Worker entry point — same open question this repo's README already
+// records for worker/src/app.ts. That decision was explicitly out of scope
+// here; this file is a preserved reference, not a working build target.
+//
+// wrangler.jsonc's `main` no longer points at a SvelteKit build (there is
+// none to build); the Worker now serves worker/cljs/public as static assets
+// only. This proxy route is therefore not live in the deployed Worker even
+// as reference code — it was not live before this migration either (see
+// docs/operator-quickstart.md §6: none of mcp.etzhayyim.com,
+// arb.etzhayyim.com, or arb2x301.etzhayyim.com resolve).
+// --- original content below, byte-for-byte -------------------------------
 import { json, type RequestEvent } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 

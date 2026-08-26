@@ -13,10 +13,10 @@ else and arrives over XRPC.
 |---|---|
 | repo | `cloud-itonami/arbitrage` (west path `orgs/cloud-itonami/arbitrage`) |
 | origin | extracted from `etzhayyim/root` at `60-apps/etzhayyim-project-arbitrage` |
-| runtime | Cloudflare Worker (SvelteKit + `@sveltejs/adapter-cloudflare`) |
+| runtime | Cloudflare Worker (static assets from a ClojureScript/reagent/re-frame build — migrated from SvelteKit 2026-08-26, see below) |
 | declared hosts | `arb.etzhayyim.com`, `arb2x301.etzhayyim.com` |
 | deployed | **no** — see [Current status](#current-status) |
-| tracked files | 13 |
+| tracked files | 12 (`PROJECT.jsonld` + `worker/`) |
 
 ## What it refuses to do
 
@@ -30,10 +30,17 @@ than enforced in code, so it is worth reading before anything else.
 > broker bindings, no exchange API keys, no order routing.
 
 That claim is currently true by *absence*: there is no broker client, no
-signing key, no order type, and no credential binding anywhere in the 13 tracked
-files — the only outbound call in the repo is a POST to an MCP router
-(`worker/svelte/src/routes/xrpc/[...path]/+server.ts`). Nothing in the repo
-*asserts* the boundary; nothing tests it either. If execution is ever added
+signing key, no order type, and no credential binding anywhere in this repo.
+The only outbound call this repo has ever contained was a POST to an MCP
+router, in a SvelteKit server route
+(`worker/svelte/src/routes/xrpc/[...path]/+server.ts`). That route has been
+preserved verbatim at [`worker/src/xrpc-proxy.ts`](worker/src/xrpc-proxy.ts) as part
+of the 2026-08-26 Svelte→ClojureScript frontend migration (see
+[Where the code actually runs](#where-the-code-actually-runs)), but it is
+**not wired into any build or Worker entry point today** — the Worker now
+serves static assets only, so this repo currently makes **no** outbound calls
+at all, not even the ones that used to 500. Nothing in the repo *asserts* the
+NoExecution boundary; nothing tests it either. If execution is ever added
 upstream, this repo will not notice.
 
 Data sources named in the same file are public delayed/EOD feeds only (Yahoo
@@ -42,48 +49,81 @@ mentions are restricted to the opt-in cohort handle `@trader.etzhayyim.com`.
 
 ## Where the code actually runs
 
-**There are two worker entry points in this repo and only one of them ships.**
-This is the single most misleading thing about the file layout, so it is stated
-here rather than left to be discovered:
+**As of 2026-08-26 the frontend was migrated from SvelteKit to ClojureScript**
+(reagent + re-frame + `jp-go-dds`, per this workspace's UI standard). Only the
+`worker/svelte/` subtree — the status page and its build tooling — was in
+scope for that migration; `worker/src/app.ts` was left untouched, and the
+backend proxy route that used to live inside `worker/svelte/` was preserved
+rather than deleted (see below). `worker/wrangler.jsonc` was updated to match,
+but **`wrangler deploy`/`wrangler dev` were not run** — the change is
+UNVERIFIED against a real Cloudflare account.
 
 ```
 worker/wrangler.jsonc
-  main: "svelte/.svelte-kit/cloudflare/_worker.js"   ← the SvelteKit build output
+  (no "main")   ← dropped; there is no server-rendered Worker script anymore
+  assets.directory: "./cljs/public"   ← the ClojureScript build's static output
 ```
 
-- **`worker/svelte/` — this is what deploys.** `main` points at the
-  adapter-cloudflare build output. Its routes are `/` (a scaffold status page)
-  and `POST /xrpc/<nsid>` (proxy to the MCP router).
-- **`worker/src/app.ts` — this does not deploy.** It is a hand-written facade
-  with its own `/health` endpoint and a *different* upstream
-  (`dispatcher.etzhayyim.com` rather than `mcp.etzhayyim.com`). No build
-  references it, no `tsconfig.json` covers it, and it does not typecheck on its
-  own (`ExportedHandler` needs `@cloudflare/workers-types`, which is not a
-  dependency here). Verified against a real build in
-  [`docs/operator-quickstart.md`](docs/operator-quickstart.md) §3.
+- **`worker/cljs/` — this is what deploys.** A shadow-cljs `:browser` build
+  (reagent + re-frame view over `jp-go-dds` components) whose `public/`
+  directory — including the committed, pre-generated `public/index.html` —
+  is served as static assets via the `ASSETS` binding. There is no
+  server-side route in this build; `not_found_handling` stays `"none"`.
+- **`worker/src/app.ts` — this still does not deploy**, unchanged from
+  before this migration. It is a hand-written facade with its own `/health`
+  endpoint and a *different* upstream (`dispatcher.etzhayyim.com` rather than
+  `mcp.etzhayyim.com`). No build references it, no `tsconfig.json` covers it,
+  and it does not typecheck on its own (`ExportedHandler` needs
+  `@cloudflare/workers-types`, which is not a dependency here). It was read
+  again during this migration specifically to check whether it calls
+  `env.ASSETS.fetch` (it does not — it has its own `fetch` handler and 404s on
+  anything outside `/health` and `/xrpc/com.etzhayyim.apps.arb.*`), which is
+  why `main` was dropped rather than repointed at it: a worker script that
+  doesn't itself serve `ASSETS` would sit in front of the assets with nothing
+  serving them. Verified against a real build in
+  [`docs/operator-quickstart.md`](docs/operator-quickstart.md) §3 (pre-migration).
+- **`worker/src/xrpc-proxy.ts` — preserved, not wired.** This is the SvelteKit
+  server route (`worker/svelte/src/routes/xrpc/[...path]/+server.ts`) that
+  used to proxy `POST /xrpc/<nsid>` to the MCP router. It was real edge logic,
+  not frontend markup, and had no cljs counterpart to migrate to (the cljs
+  build has no server-side target), so rather than deleting it silently it
+  was moved verbatim with a header explaining its status. It needs its own
+  `tsconfig.json` and a decision about whether/how to wire it into a real
+  Worker entry point before it does anything again — same open question this
+  README already records for `worker/src/app.ts`.
 
-Deciding which of the two is authoritative is a design change, not a
-documentation change, so this README only records that they disagree.
+Deciding which (if either) of `worker/src/app.ts` / `worker/src/xrpc-proxy.ts` is
+authoritative going forward is a design change, not a documentation change,
+so this README only records that a decision is outstanding.
 
 ## Repository layout
 
 ```
 PROJECT.jsonld            project identity + the 10 declared actor DIDs
 README.edn                extraction record (machine-readable, superseded as an entry point by this file)
-migration.edn             what was extracted from etzhayyim/root, with a checkable byte count
+migration.edn             what was extracted from etzhayyim/root, with a checkable byte count (historical — see below)
 worker/
   kotodama.jsonld         agent identity, KPIs, governance, channels, triggers
-  wrangler.jsonc          Cloudflare config — routes, vars, and `main`
+  wrangler.jsonc          Cloudflare config — routes, vars, and `assets.directory`
   src/app.ts              unbuilt second facade (see above)
-  svelte/                 the deployed worker
-    src/routes/+page.svelte              status page at /
-    src/routes/xrpc/[...path]/+server.ts POST /xrpc/<nsid> → MCP router
+  src/xrpc-proxy.ts       preserved-but-unwired MCP-router proxy (see above)
+  cljs/                   the deployed worker (static assets)
+    deps.edn, shadow-cljs.edn, package.json   build config (reagent + re-frame + jp-go-dds)
+    src/arbitrage_worker/app.cljs             the status page, as a reagent view
+    test/arbitrage_worker/app_test.cljs       cljs.test coverage for it
+    public/index.html                         committed, pre-generated HTML shell (DADS CSS inlined)
 ```
 
-`migration.edn` claims the extraction carried **11 files / 15,234 bytes**. That
-is still exactly true of the 11 non-metadata files in this repo, and
-[`docs/operator-quickstart.md`](docs/operator-quickstart.md) §2 checks it in one
-command with no dependencies installed.
+`migration.edn` claims the **original 2026-08 extraction from `etzhayyim/root`**
+carried 11 files / 15,234 bytes. That claim is about the extraction event, not
+an invariant over all time: it was true through commit `412fa8a`, and the
+2026-08-26 Svelte→ClojureScript migration intentionally changed the tracked
+file set (deleted `worker/svelte/`, added `worker/cljs/` and
+`worker/src/xrpc-proxy.ts`), so the counts in
+[`docs/operator-quickstart.md`](docs/operator-quickstart.md) §2 no longer
+match `migration.edn` as of this commit — **that mismatch is expected, not a
+sign that extracted content was edited without updating the record.** See
+that document's §2 for the current counts and how they were recomputed.
 
 ## Current status
 
@@ -95,15 +135,18 @@ Measured 2026-08-12:
 | `etzhayyim.com` | parent zone | yes (Cloudflare) |
 | `arb.etzhayyim.com` | declared route + `did:web` base | **no** |
 | `arb2x301.etzhayyim.com` | declared route | **no** |
-| `mcp.etzhayyim.com` | upstream the shipped route proxies to | **no** |
+| `mcp.etzhayyim.com` | upstream `worker/src/xrpc-proxy.ts` would proxy to, if wired | **no** |
 | `dispatcher.etzhayyim.com` | upstream `src/app.ts` would use | **no** |
 
 Consequences that follow from that table:
 
-- `POST /xrpc/<nsid>` returns **500 `{"message":"Internal Error"}`** even
-  locally, because the upstream fetch throws and the route has no `try`/`catch`
-  around it. The route's own error shapes (400 / 502) are unreachable while the
-  router is down.
+- Pre-migration, `POST /xrpc/<nsid>` returned **500
+  `{"message":"Internal Error"}`** even locally, because the upstream fetch
+  threw and the route had no `try`/`catch` around it. As of the 2026-08-26
+  frontend migration that route is no longer part of the deployed Worker at
+  all (see [Where the code actually runs](#where-the-code-actually-runs)), so
+  this specific failure mode is currently moot — there is no `/xrpc/*` route
+  being served, working or otherwise.
 - The 10 actor DIDs in `PROJECT.jsonld` are all `did:web:arb.etzhayyim.com…`,
   which resolve through `https://arb.etzhayyim.com/.well-known/did.json`. **None
   of them resolve today.**
@@ -112,14 +155,21 @@ Consequences that follow from that table:
   named in `worker/src/app.ts` — lives in `etzhayyim/root` and was **not**
   extracted into this repo. This repo cannot produce a signal on its own.
 
-The build, the typecheck, and the local page all work. What is missing is
-everything on the other side of the network boundary.
+Pre-migration (SvelteKit), the build, the typecheck, and the local page all
+worked. What was missing was everything on the other side of the network
+boundary — that has not changed. Post-migration (ClojureScript), see
+[`docs/operator-quickstart.md`](docs/operator-quickstart.md) §3 for the
+2026-08-26 build/test record; `wrangler deploy`/`wrangler dev` remain
+unverified either way.
 
 ## Getting started
 
-Read [`docs/operator-quickstart.md`](docs/operator-quickstart.md). It is written
-so that §1–§2 need nothing installed, and §3 onward were each run end to end on
-2026-08-12 with their real output recorded, including the failures.
+Read [`docs/operator-quickstart.md`](docs/operator-quickstart.md). §1–§2 need
+nothing installed and describe the pre-migration (2026-08-12) extraction
+record; §3 has been updated for the 2026-08-26 Svelte→ClojureScript
+migration, with its build/test output recorded including any failures; §4–§8
+are pre-migration and now describe the SvelteKit build this repo no longer
+has (kept for history, flagged inline).
 
 ## Naming
 

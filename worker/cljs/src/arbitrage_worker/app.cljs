@@ -1,0 +1,108 @@
+(ns arbitrage-worker.app
+  "arb.etzhayyim.com worker status page — reagent + re-frame port of the
+  SvelteKit scaffold page that used to live at
+  worker/svelte/src/routes/+page.svelte (`app.relativePath` below records the
+  new source location the same way the original recorded its own).
+
+  Faithful port of the original static `app` object and its four sections
+  (top / facts / Public Routes / Runtime Bindings / Source) — no new fields,
+  no new sections. The bespoke inline dark CSS from the Svelte file is
+  dropped in favour of jp-go-dds (デジタル庁デザインシステム), per this
+  workspace's UI standard (ADR-2608080100 / skill kotoba-uiux); no visual
+  parity with the old hand-rolled stylesheet is claimed or attempted.
+
+  Out of scope for this migration: `worker/svelte/src/routes/xrpc/[...path]/
+  +server.ts`, the SvelteKit *server* route that proxied POST /xrpc/<nsid> to
+  the MCP router. That is backend edge logic, not frontend markup, and this
+  cljs build has no server-side counterpart (shadow-cljs :browser target
+  only). Its source has been preserved verbatim at
+  ../xrpc-proxy.ts.not-wired — see that file's header and
+  docs/operator-quickstart.md for its current status."
+  (:require [reagent.dom :as rdom]
+            [re-frame.core :as rf]
+            [jp-go-dds.core :as dds]))
+
+;; --- db ------------------------------------------------------------------
+;; Same shape as the Svelte scaffold's `app` object (routeCount -> :route-count,
+;; xrpc -> :xrpc?, relativePath -> :relative-path). Static today, exactly as
+;; the original was — re-frame is used because it is this workspace's
+;; convention for this migration wave, not because this page has become
+;; interactive.
+
+(def default-db
+  {:title "Worker"
+   :project "etzhayyim-project-arbitrage"
+   :name "worker"
+   :kind "worker"
+   :route-count 0
+   :routes []
+   :vars []
+   :xrpc? true
+   :relative-path "worker/cljs/src/arbitrage_worker/app.cljs"})
+
+(rf/reg-event-db
+ ::initialize-db
+ (fn [_ _] default-db))
+
+(rf/reg-sub ::title (fn [db _] (:title db)))
+(rf/reg-sub ::project (fn [db _] (:project db)))
+(rf/reg-sub ::name (fn [db _] (:name db)))
+(rf/reg-sub ::kind (fn [db _] (:kind db)))
+(rf/reg-sub ::route-count (fn [db _] (:route-count db)))
+(rf/reg-sub ::routes (fn [db _] (:routes db)))
+(rf/reg-sub ::vars (fn [db _] (:vars db)))
+(rf/reg-sub ::xrpc? (fn [db _] (:xrpc? db)))
+(rf/reg-sub ::relative-path (fn [db _] (:relative-path db)))
+
+;; --- view ------------------------------------------------------------------
+
+(defn- facts-panel [project route-count xrpc?]
+  (dds/grid
+   {:min "200px"}
+   (dds/card [:p {:class "dds-ext-lead"} "Project"] [:p [:strong project]])
+   (dds/card [:p {:class "dds-ext-lead"} "Routes"] [:p [:strong (str route-count)]])
+   (dds/card [:p {:class "dds-ext-lead"} "XRPC"]
+             [:p [:strong (if xrpc? "enabled" "not configured")]])))
+
+(defn- routes-panel [routes]
+  (dds/card
+   (dds/heading 2 "Public Routes" {:size "24"})
+   (if (seq routes)
+     (into [:ul {:class "dds-ext-stack"}] (map (fn [route] [:li route]) routes))
+     [:p {:class "dds-ext-lead"} "No public route is declared next to this app surface."])))
+
+(defn- vars-panel [vars]
+  (dds/card
+   (dds/heading 2 "Runtime Bindings" {:size "24"})
+   (if (seq vars)
+     (into [:div {:class "dds-ext-row"}] (map (fn [k] (dds/chip-label k {:color "gray"})) vars))
+     [:p {:class "dds-ext-lead"} "No public vars are declared in the nearest wrangler config."])))
+
+(defn- source-panel [relative-path]
+  (dds/card
+   (dds/heading 2 "Source" {:size "24"})
+   [:p [:code relative-path]]))
+
+(defn app-view []
+  (let [title        @(rf/subscribe [::title])
+        project      @(rf/subscribe [::project])
+        name         @(rf/subscribe [::name])
+        kind         @(rf/subscribe [::kind])
+        route-count  @(rf/subscribe [::route-count])
+        routes       @(rf/subscribe [::routes])
+        vars         @(rf/subscribe [::vars])
+        xrpc?        @(rf/subscribe [::xrpc?])
+        relative-path @(rf/subscribe [::relative-path])]
+    (dds/container
+     [:section {:class "dds-ext-section"}
+      [:p {:class "dds-ext-lead"} (str "Cloudflare " kind)]
+      (dds/heading 1 title)
+      [:p [:code name]]]
+     (facts-panel project route-count xrpc?)
+     (routes-panel routes)
+     (vars-panel vars)
+     (source-panel relative-path))))
+
+(defn ^:export main []
+  (rf/dispatch-sync [::initialize-db])
+  (rdom/render [app-view] (.getElementById js/document "app")))

@@ -1,6 +1,18 @@
 {
+  // UNVERIFIED (2026-08-26): frontend migrated from SvelteKit to ClojureScript
+  // (reagent + re-frame + jp-go-dds); see docs/operator-quickstart.md and
+  // README.md "Where the code actually runs". `main` used to point at the
+  // SvelteKit adapter-cloudflare build output, which no longer exists —
+  // there is nothing left to build a Worker script from, so `main` is
+  // dropped and this Worker now serves worker/cljs/public as static assets
+  // only. `worker/src/app.ts` was read and does NOT call env.ASSETS.fetch
+  // (it has its own fetch handler with a different upstream,
+  // dispatcher.etzhayyim.com, and 404s on anything but /health and
+  // /xrpc/com.etzhayyim.apps.arb.*) — repointing `main` at it would leave a
+  // worker sitting in front of the assets with nothing serving them, so
+  // `main` is left absent rather than repointed. `wrangler deploy` /
+  // `wrangler dev` were NOT run to verify this.
   "name": "kotodama-arb2x301",
-  "main": "svelte/.svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2025-03-17",
   "compatibility_flags": [
     "nodejs_compat",
@@ -10,7 +22,7 @@
     "APP_CAPABILITIES": "[\"edge-facade\",\"bpmn-dispatch\",\"mcp-tool\"]",
     "APP_DESCRIPTION": "Educational arbitrage proposal feed across stocks / real estate / futures / commodities / FX / crypto. PROPOSE-only — never executes. Public delayed feeds, opt-in cohort mentions.",
     "APP_DISPLAY_NAME": "Arb — Cross-Asset Arbitrage Signals",
-    "APP_FRAMEWORK": "sveltekit-edge-bff",
+    "APP_FRAMEWORK": "cljs-reagent-static",
     "APP_NANOID": "arb2x301",
     "APP_PERFORMER_TYPE": "service",
     "APP_UI_TYPE": "yoro",
@@ -27,7 +39,7 @@
     }
   ],
   "assets": {
-    "directory": "./svelte/.svelte-kit/cloudflare/client",
+    "directory": "./cljs/public",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none"
