@@ -38,7 +38,7 @@
    :routes []
    :vars []
    :xrpc? true
-   :relative-path "worker/cljs/src/arbitrage_worker/app.cljs"})
+   :relative-path "worker/cljs/src/arbitrage_worker/app.cljk"})
 
 (rf/reg-event-db
  ::initialize-db

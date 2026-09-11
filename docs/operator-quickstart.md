@@ -58,8 +58,8 @@ worker/cljs/deps.edn
 worker/cljs/package.json
 worker/cljs/public/index.html
 worker/cljs/shadow-cljs.edn
-worker/cljs/src/arbitrage_worker/app.cljs
-worker/cljs/test/arbitrage_worker/app_test.cljs
+worker/cljs/src/arbitrage_worker/app.cljk
+worker/cljs/test/arbitrage_worker/app_test.cljk
 worker/kotodama.jsonld
 worker/src/app.ts
 worker/wrangler.jsonc
@@ -72,7 +72,7 @@ The files that carry all the meaning:
 |---|---|
 | `worker/kotodama.jsonld` | the agent's identity, its KPIs, and the **NoExecution / EducationalOnly** boundary |
 | `worker/wrangler.jsonc` | which hosts it answers on, and that it now serves `worker/cljs/public` as static assets (no `main`) |
-| `worker/cljs/src/arbitrage_worker/app.cljs` | the status page, ported from the old SvelteKit route |
+| `worker/cljs/src/arbitrage_worker/app.cljk` | the status page, ported from the old SvelteKit route |
 | `worker/src/xrpc-proxy.ts` | the only outbound call this repo has ever had — **preserved, not wired** as of 2026-08-26 |
 | `PROJECT.jsonld` | the 10 actor DIDs this project claims |
 
@@ -407,7 +407,7 @@ Recorded so nobody reads the sections above as broader than they are.
 - **The NoExecution boundary was read, not tested.** It holds by absence of a
   broker client, not by an assertion. There was no test suite in this repo at
   all as of 2026-08-12. **This has partially changed**: as of 2026-08-26,
-  `worker/cljs/test/arbitrage_worker/app_test.cljs` covers the status page's
+  `worker/cljs/test/arbitrage_worker/app_test.cljk` covers the status page's
   rendering logic (`cljs.test`, 6 tests / 18 assertions, see §3) — but it does
   not touch the NoExecution boundary, which still holds by absence, not by
   assertion.
