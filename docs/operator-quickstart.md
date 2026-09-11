@@ -142,7 +142,7 @@ Build, through the shared fleet resource guard (foreground, retried on
 a row here before the lock cleared):
 
 ```bash
-node /Users/junkawasaki/github/com-junkawasaki/scripts/resource-guard.mjs run build -- npx shadow-cljs compile app
+node /Users/junkawasaki/github/com-junkawasaki/scripts/resource-guard.mjs run build -- amu compile --target wasm32-browser app
 ```
 
 ```
@@ -158,7 +158,7 @@ omitted above — cosmetic, not build failures.)
 Test build, same guard:
 
 ```bash
-node /Users/junkawasaki/github/com-junkawasaki/scripts/resource-guard.mjs run build -- npx shadow-cljs compile test
+node /Users/junkawasaki/github/com-junkawasaki/scripts/resource-guard.mjs run build -- amu compile --target wasm32-browser test
 ```
 
 ```
