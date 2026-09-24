@@ -14,6 +14,10 @@ hermes/profiles/<profile>/
   scripts/         scripts its cron jobs run
 ```
 
+`secrets.edn` (optional) declares which environment variables the bot needs and
+where each comes from — a kagi item or a 1Password `op://` reference, never a
+value. `hermes-profile-repo.cljk secrets <profile>` writes the host's `.env` from it.
+
 **Never here:** `.env` and any secret value, the measurement ledger and
 `workspace/`, sessions, memories, logs, caches, run state. Secrets are placed
 on the host from kagi (ADR-2607198200); run data stays on the host.
