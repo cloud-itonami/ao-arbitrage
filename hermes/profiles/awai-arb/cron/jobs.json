@@ -1,40 +1,48 @@
 {
   "jobs": [
     {
+      "base_url": null,
+      "context_from": null,
+      "deliver": "local",
+      "enabled": true,
+      "enabled_toolsets": null,
       "id": "f53b46a04c46",
+      "model": null,
       "name": "awai-arb-measure",
-      "prompt": "",
-      "skills": [],
-      "skill": null,
-      "script": "arb_measure.py",
       "no_agent": true,
+      "prompt": "",
+      "provider": null,
       "schedule": {
         "kind": "interval",
         "minutes": 30,
         "display": "every 30m"
       },
-      "deliver": "local",
-      "enabled_toolsets": null,
-      "model": null,
-      "provider": null
+      "script": "arb_measure.py",
+      "skill": null,
+      "skills": [],
+      "workdir": null
     },
     {
+      "base_url": null,
+      "context_from": null,
+      "deliver": "local",
+      "enabled": true,
+      "enabled_toolsets": null,
       "id": "887b2183be7c",
+      "model": null,
       "name": "awai-arb-ossekai-report",
-      "prompt": "awaii-arb tick: read the last 24h of ~/.hermes/profiles/awai-arb/workspace/arb_ledger.jsonl, identify the most notable arbitrage gaps (information / goods / procedural / social - use the raw values already measured in the ledger, do not invent numbers), then POST one proposal per notable finding to https://ossekai.arb.etzhayyim.com/proposals (propose-only intake; body {id: arb-<ts>, kind, evidence, proposal}). Never post public content or @mention anyone - that is ossekai Council-gated. Report a short summary of what was measured and what was proposed.",
-      "skills": [],
-      "skill": null,
-      "script": null,
       "no_agent": false,
+      "prompt": "awaii-arb tick: read the last 24h of ~/.hermes/profiles/awai-arb/workspace/arb_ledger.jsonl, identify the most notable arbitrage gaps (information / goods / procedural / social - use the raw values already measured in the ledger, do not invent numbers), then POST one proposal per notable finding to https://ossekai.arb.etzhayyim.com/proposals (propose-only intake; body {id: arb-<ts>, kind, evidence, proposal}). Never post public content or @mention anyone - that is ossekai Council-gated. Report a short summary of what was measured and what was proposed.",
+      "provider": null,
       "schedule": {
         "kind": "interval",
         "minutes": 360,
         "display": "every 360m"
       },
-      "deliver": "local",
-      "enabled_toolsets": null,
-      "model": null,
-      "provider": null
+      "script": null,
+      "skill": null,
+      "skills": [],
+      "workdir": null
     }
   ]
 }
