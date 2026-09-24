@@ -1,5 +1,4 @@
-# Trimmed from the live profile: secrets helper, command allowlist,
-# onboarding state, terminal cwd and trusted dirs are host-local and omitted.
+# Host-local blocks (command_allowlist, onboarding, secrets, skills, terminal) are kept on the host and omitted here.
 model:
   provider: kotoba
 

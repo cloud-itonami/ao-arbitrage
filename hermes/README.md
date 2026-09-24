@@ -18,16 +18,21 @@ hermes/profiles/<profile>/
 `workspace/`, sessions, memories, logs, caches, run state. Secrets are placed
 on the host from kagi (ADR-2607198200); run data stays on the host.
 
-Materialize / check from the superproject:
+Materialize / check / export from the superproject root
+(`scripts/hermes-profile-repo.cljk`, registry `manifest/hermes-profile-repos.edn`):
 
 ```
-kbb --backend sci scripts/hermes-profile-repo.cljk materialize <repo-path> [<profile>]
-kbb --backend sci scripts/hermes-profile-repo.cljk check       <repo-path> [<profile>]
+kbb --backend sci scripts/hermes-profile-repo.cljk materialize awai-arb   # repo -> host
+kbb --backend sci scripts/hermes-profile-repo.cljk check awai-arb         # compare only
+kbb --backend sci scripts/hermes-profile-repo.cljk export awai-arb        # host -> repo
 ```
 
-`check` exits 0 when the host matches, 1 on drift (named per file), 2 when it
-could not compare. Edits the bot makes to its own SOUL or skills on the host
-show up as drift and are brought back with `export`, then committed here.
+`check` exits 0 when host and repo agree, 1 on drift (named per file), 2 when
+it could not compare (a `REFUSE` line says why). Edits the bot makes to its
+own SOUL or skills on the host show up as drift; `export` brings them back to
+be committed here. `materialize` keeps the host's own config blocks (secrets
+helper, allowlist, terminal cwd) and cron run state, and does not invent cron
+jobs the host lacks — it prints `NEEDS-REGISTER` for them.
 
 ## Profiles
 
