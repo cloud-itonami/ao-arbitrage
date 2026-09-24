@@ -7,7 +7,7 @@ description: "Use when running the awai-arb cron arbitrage tick."
 
 1. Read last 24h of `~/.hermes/profiles/awai-arb/workspace/arb_ledger.jsonl` (1 tick = 1 JSON line). If the ledger is unreadable/empty AND the sandbox is degraded (see below), fall back to fresh live GET measurement via `web_extract` — never invent numbers; label evidence as live-measured with timestamp.
 2. Endpoints: torihiki-node `/head` `/book` (devnet, collateral unbacked — paper only), x402.nexus `/stats` `/api/catalog`, murakumo `/v1/models`, Coinbase spot BTC-USD/USDC-USD.
-3. Proposals: POST to `https://ossekai.arb.etzhayyim.com/proposals`, body `{id: "arb-<ts>", kind: information|goods|procedural|social, evidence, proposal}`. Propose-only; no public posts, no @mentions (Council-gated).
+3. Proposals: DRAFT them into `workspace/pending_proposals_<YYYY-MM-DD>.json` (`{"status":"PENDING_POST","proposals":[{id: "arb-<ts>-<slug>", kind: information|goods|procedural|social, evidence, proposal}]}`). Do not POST from the agent turn: the no-agent job `awai-arb-propose-post` (`scripts/arb_post.py`, every 30m) sends them to `https://ossekai.arb.etzhayyim.com/proposals` and confirms each by read-back (since 2026-09-24). Propose-only; no public posts, no @mentions (Council-gated).
 
 ## Pitfalls (2026-09-22 run)
 - `execute_code` is BLOCKED in cron mode (unattended approval policy) — do not plan around it.

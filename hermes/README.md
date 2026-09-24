@@ -38,4 +38,4 @@ jobs the host lacks — it prints `NEEDS-REGISTER` for them.
 
 | profile | what it does | cron |
 |---|---|---|
-| `awai-arb` | measures arbitrage surfaces (torihiki devnet, x402.nexus, murakumo pricing, Coinbase refs) into an append-only ledger, and proposes findings to the ossekai intake. Propose-only; never trades. | `awai-arb-measure` every 30m (script), `awai-arb-ossekai-report` every 6h (agent) |
+| `awai-arb` | measures arbitrage surfaces (torihiki devnet, x402.nexus, murakumo pricing, Coinbase refs) into an append-only ledger, drafts proposals from it, and sends them to the ossekai intake. Propose-only; never trades. | `awai-arb-measure` every 30m (script), `awai-arb-ossekai-report` every 6h (agent, drafts only), `awai-arb-propose-post` every 30m (script, POST + read-back) |

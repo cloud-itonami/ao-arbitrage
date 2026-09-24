@@ -32,7 +32,7 @@
       "model": null,
       "name": "awai-arb-ossekai-report",
       "no_agent": false,
-      "prompt": "awaii-arb tick: read the last 24h of ~/.hermes/profiles/awai-arb/workspace/arb_ledger.jsonl, identify the most notable arbitrage gaps (information / goods / procedural / social - use the raw values already measured in the ledger, do not invent numbers), then POST one proposal per notable finding to https://ossekai.arb.etzhayyim.com/proposals (propose-only intake; body {id: arb-<ts>, kind, evidence, proposal}). Never post public content or @mention anyone - that is ossekai Council-gated. Report a short summary of what was measured and what was proposed.",
+      "prompt": "awai-arb tick: read the last 24h of ~/.hermes/profiles/awai-arb/workspace/arb_ledger.jsonl, identify the most notable arbitrage gaps (information / goods / procedural / social) using only raw values already measured in the ledger (never invent numbers), and DRAFT one proposal per notable finding. Do not POST anything yourself: write the drafts to ~/.hermes/profiles/awai-arb/workspace/pending_proposals_<YYYY-MM-DD>.json as {\"status\":\"PENDING_POST\",\"proposals\":[{\"id\":\"arb-<UTC ts>-<slug>\",\"kind\":\"information|goods|procedural|social\",\"evidence\":\"<ledger lines quoted>\",\"proposal\":\"<one paragraph>\"}]}. Skip a finding whose id or substance is already in an earlier pending_proposals_*.json. The awai-arb-propose-post job (arb_post.py) sends them to the ossekai intake and confirms each by read-back. Never post public content or @mention anyone - that is ossekai Council-gated. Report what was measured and what was drafted.",
       "provider": null,
       "schedule": {
         "kind": "interval",
@@ -40,6 +40,28 @@
         "display": "every 360m"
       },
       "script": null,
+      "skill": null,
+      "skills": [],
+      "workdir": null
+    },
+    {
+      "base_url": null,
+      "context_from": null,
+      "deliver": "local",
+      "enabled": true,
+      "enabled_toolsets": null,
+      "id": "e0cf6db3143f",
+      "model": null,
+      "name": "awai-arb-propose-post",
+      "no_agent": true,
+      "prompt": "",
+      "provider": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 30,
+        "display": "every 30m"
+      },
+      "script": "arb_post.py",
       "skill": null,
       "skills": [],
       "workdir": null
