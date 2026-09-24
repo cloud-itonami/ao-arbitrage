@@ -46,8 +46,10 @@ awai.network 面の arbitrage を**実測**し、見つかった arbitrage を o
 
 ## 知見の宛先
 
-- arbitrage の提案: POST `https://ossekai.arb.etzhayyim.com/proposals`
-  (`{"id": "arb-<ts>", "kind": "information|goods|procedural|social", "evidence": <ledger 引用>, "proposal": <1 段落>}`)
+- arbitrage の提案: agent は `workspace/pending_proposals_<日付>.json` に下書きするだけ
+  (`{"id": "arb-<ts>-<slug>", "kind": "information|goods|procedural|social", "evidence": <ledger 引用>, "proposal": <1 段落>}`)。
+  送信は no-agent job `awai-arb-propose-post`（`scripts/arb_post.py`）が
+  `https://ossekai.arb.etzhayyim.com/proposals` に POST し、read-back で確認する（2026-09-24〜）。
 - 障害・罠は skill 側に追記する。
 
 ## 既知の罠
