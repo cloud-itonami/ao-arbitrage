@@ -1,7 +1,12 @@
-# arbitrage
+# ao-arbitrage
 
-`cloud-itonami/arbitrage` — **educational cross-asset arbitrage *signal* feed.**
-It proposes, posts, and mentions. **It never executes.**
+`cloud-itonami/ao-arbitrage` (renamed from `arbitrage` on 2026-09-24) —
+**educational cross-asset arbitrage *signal* feed, and the resident bot that
+measures and proposes it.** It proposes, posts, and mentions. **It never executes.**
+
+The subject and the bot are one repository. The Hermes profile that acts for
+it — `awai-arb` — lives in [`hermes/`](hermes/README.md) and is materialized
+onto the host from there.
 
 The name says what the subject is, not what the code does. What the code
 actually is today is small and worth stating plainly: **one Cloudflare Worker
@@ -11,7 +16,7 @@ else and arrives over XRPC.
 
 | | |
 |---|---|
-| repo | `cloud-itonami/arbitrage` (west path `orgs/cloud-itonami/arbitrage`) |
+| repo | `cloud-itonami/ao-arbitrage` (west path `orgs/cloud-itonami/ao-arbitrage`) |
 | origin | extracted from `etzhayyim/root` at `60-apps/etzhayyim-project-arbitrage` |
 | runtime | Cloudflare Worker (static assets from a ClojureScript/reagent/re-frame build — migrated from SvelteKit 2026-08-26, see below) |
 | declared hosts | `arb.etzhayyim.com`, `arb2x301.etzhayyim.com` |
@@ -99,6 +104,7 @@ so this README only records that a decision is outstanding.
 ## Repository layout
 
 ```
+hermes/                   resident bot profile(s) — source of truth, see hermes/README.md
 PROJECT.jsonld            project identity + the 10 declared actor DIDs
 README.edn                extraction record (machine-readable, superseded as an entry point by this file)
 migration.edn             what was extracted from etzhayyim/root, with a checkable byte count (historical — see below)
@@ -173,9 +179,10 @@ has (kept for history, flagged inline).
 
 ## Naming
 
-The bare name `arbitrage` is the **subject** plane: this is not a mirror of an
-external spec, and its executing role is not yet fixed. Identity is the path
-`cloud-itonami/arbitrage`, not the name alone.
+`ao-` is the role prefix for a repository that is an artificial organism — a
+resident bot (kotoba-lang/ao model) whose subject, code and Hermes profile
+live together. Identity is the path `cloud-itonami/ao-arbitrage`; GitHub
+redirects the old `cloud-itonami/arbitrage`.
 
 Note that `README.edn` still records the pre-extraction destination
 `etzhayyim/com-etzhayyim-app-arbitrage`, and every DID, host, and namespace in
