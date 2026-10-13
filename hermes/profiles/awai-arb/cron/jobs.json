@@ -23,17 +23,17 @@
       "workdir": null
     },
     {
-      "base_url": null,
+      "base_url": "https://api.murakumo.cloud/v1",
       "context_from": null,
       "deliver": "local",
       "enabled": true,
       "enabled_toolsets": null,
       "id": "887b2183be7c",
-      "model": null,
+      "model": "mishima",
       "name": "awai-arb-ossekai-report",
       "no_agent": false,
       "prompt": "awai-arb tick: read the last 24h of ~/.hermes/profiles/awai-arb/workspace/arb_ledger.jsonl, identify the most notable arbitrage gaps (information / goods / procedural / social) using only raw values already measured in the ledger (never invent numbers), and DRAFT one proposal per notable finding. Do not POST anything yourself: write the drafts to ~/.hermes/profiles/awai-arb/workspace/pending_proposals_<YYYY-MM-DD>.json as {\"status\":\"PENDING_POST\",\"proposals\":[{\"id\":\"arb-<UTC ts>-<slug>\",\"kind\":\"information|goods|procedural|social\",\"evidence\":\"<ledger lines quoted>\",\"proposal\":\"<one paragraph>\"}]}. Skip a finding whose id or substance is already in an earlier pending_proposals_*.json. The awai-arb-propose-post job (arb_post.py) sends them to the ossekai intake and confirms each by read-back. Never post public content or @mention anyone - that is ossekai Council-gated. Report what was measured and what was drafted.",
-      "provider": null,
+      "provider": "murakumo",
       "schedule": {
         "kind": "interval",
         "minutes": 360,
